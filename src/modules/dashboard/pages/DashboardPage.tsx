@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Package,
   IndianRupee,
@@ -5,6 +6,8 @@ import {
   FileText,
   ClipboardCheck,
   RefreshCw,
+  Train,
+  Users,
 } from "lucide-react";
 import {
   Bar,
@@ -25,7 +28,7 @@ import {
   PAYMENT_MODE_COLORS,
   PAYMENT_STATUS_COLORS,
 } from "@/modules/consignment/constants/consignment.constants";
-import type { PaymentModeMix } from "../api/dashboardApi";
+import type { PaymentModeMix, PendingByTrain } from "../api/dashboardApi";
 
 /** On-brand palette pulled from index.css. Recharts wants string colors. */
 const SAFFRON = "#FF7733";
@@ -124,6 +127,91 @@ function MoneyTooltip({
   );
 }
 
+/**
+ * Pending-by-train widget: train numbers laid out as chips side by side.
+ * Click a train → its pending parties expand below. Click again to collapse.
+ * Only one train is open at a time.
+ */
+function PendingByTrainCard({ trains }: { trains: PendingByTrain[] }) {
+  const [selected, setSelected] = useState<string | null>(null);
+  const active = selected ? (trains.find((t) => t.trainNumber === selected) ?? null) : null;
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+      <div className="mb-4 flex items-center gap-2">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
+          <Train className="h-5 w-5" />
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold text-foreground">Pending by Train</h2>
+          <p className="text-xs text-muted-foreground">
+            Tap a train number to see which parties still have pending consignments
+          </p>
+        </div>
+      </div>
+
+      {/* Train-number chips, side by side */}
+      <div className="flex flex-wrap gap-2">
+        {trains.map((t) => {
+          const isActive = t.trainNumber === selected;
+          return (
+            <button
+              key={t.trainNumber}
+              onClick={() => setSelected(isActive ? null : t.trainNumber)}
+              className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${
+                isActive
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-background text-foreground hover:bg-accent"
+              }`}
+            >
+              <span className="font-mono font-semibold">{t.trainNumber}</span>
+              <span
+                className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-xs ${
+                  isActive
+                    ? "bg-primary-foreground/20 text-primary-foreground"
+                    : "bg-primary/10 text-primary"
+                }`}
+              >
+                <Users className="h-3 w-3" />
+                {t.partyCount}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Selected train's party list */}
+      {active && (
+        <div className="mt-4 rounded-xl border border-border bg-muted/30 p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-foreground">
+              Train <span className="font-mono">{active.trainNumber}</span> ·{" "}
+              <span className="text-primary">{active.partyCount}</span>{" "}
+              {active.partyCount === 1 ? "party" : "parties"} pending
+            </h3>
+            <span className="text-xs text-muted-foreground">
+              {active.consignmentCount} consignment{active.consignmentCount === 1 ? "" : "s"}
+            </span>
+          </div>
+          <ul className="divide-y divide-border">
+            {active.parties.map((p) => (
+              <li key={p.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                <span className="font-medium text-foreground">{p.name}</span>
+                <span className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span>
+                    {p.consignments} cnmt · {p.packages} pkg
+                  </span>
+                  <span className="font-semibold text-foreground">{formatCurrency(p.amount)}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function DashboardPage() {
   const { data, isLoading, error, refetch } = useDashboard();
 
@@ -158,6 +246,7 @@ export function DashboardPage() {
   const trend = data?.monthlyTrend ?? [];
   const mix = (data?.paymentModeMix ?? []).filter((m) => m.count > 0);
   const stations = data?.topStations ?? [];
+  const pendingTrains = data?.pendingByTrain ?? [];
   const totalConsignmentsThisMonth = mix.reduce((s, m) => s + m.count, 0);
 
   return (
@@ -221,6 +310,9 @@ export function DashboardPage() {
           color="bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400"
         />
       </div>
+
+      {/* Pending consignments grouped by train number */}
+      {pendingTrains.length > 0 && <PendingByTrainCard trains={pendingTrains} />}
 
       {/* Charts row */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">

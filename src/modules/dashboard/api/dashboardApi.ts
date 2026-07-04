@@ -20,6 +20,21 @@ export type TopStation = {
   packages: number;
 };
 
+export type PendingTrainParty = {
+  id: string;
+  name: string;
+  consignments: number;
+  packages: number;
+  amount: number;
+};
+
+export type PendingByTrain = {
+  trainNumber: string;
+  partyCount: number;
+  consignmentCount: number;
+  parties: PendingTrainParty[];
+};
+
 export type DashboardMetrics = {
   today: { consignmentCount: number; totalRevenue: number; totalPackages: number };
   outstanding: { totalAmount: number; consignmentCount: number };
@@ -38,6 +53,7 @@ export type DashboardMetrics = {
   monthlyTrend: MonthlyTrendPoint[];
   paymentModeMix: PaymentModeMix[];
   topStations: TopStation[];
+  pendingByTrain: PendingByTrain[];
 };
 
 export async function getDashboardMetrics(): Promise<DashboardMetrics> {
