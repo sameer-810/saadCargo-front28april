@@ -227,7 +227,7 @@ export function ConsignmentDialog({ open, onOpenChange, mode, value, onSuccess, 
           />
         </Field>
 
-        <Field label="Train No." error={errors.trainNumber?.message}>
+        <Field label="Train No." required error={errors.trainNumber?.message}>
           <input className={inputCls} {...form.register("trainNumber")} />
         </Field>
         <Field label="Bogie No." error={errors.bogieNumber?.message}>

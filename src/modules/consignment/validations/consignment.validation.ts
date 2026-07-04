@@ -22,7 +22,7 @@ export const consignmentSchema = z.object({
     .transform((v) => v.toUpperCase()),
   type: z.enum(["railway_booking", "own_bogie", "agent_handover", "agent_received"]),
   agentName: z.string().trim().optional(),
-  trainNumber: z.string().trim().optional(),
+  trainNumber: z.string().trim().min(1, "Train number is required"),
   bogieNumber: z.string().trim().optional(),
   railwayReceiptNumber: z.string().trim().optional(),
   freightAmount: z.coerce.number().min(0),
