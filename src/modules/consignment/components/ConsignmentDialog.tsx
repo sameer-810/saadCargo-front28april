@@ -177,7 +177,7 @@ export function ConsignmentDialog({ open, onOpenChange, mode, value, onSuccess, 
             {...form.register("actualWeight")}
           />
         </Field>
-        <Field label="Chargeable Weight (kg)" required error={errors.chargeableWeight?.message}>
+        <Field label="Chargeable Weight (kg)" error={errors.chargeableWeight?.message}>
           <input
             type="number"
             step="0.01"

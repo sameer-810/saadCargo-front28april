@@ -12,7 +12,7 @@ export const consignmentSchema = z.object({
   party: z.string().min(1, "Party is required"),
   packages: z.coerce.number().int().min(1, "At least 1 package"),
   actualWeight: z.coerce.number().min(0).optional(),
-  chargeableWeight: z.coerce.number().min(0.1, "Chargeable weight required"),
+  chargeableWeight: z.coerce.number().min(0),
   contents: z.string().trim().optional(),
   originStation: z.string().trim().min(1, "Origin required"),
   destinationStation: z
