@@ -26,6 +26,7 @@ export type PendingTrainParty = {
   consignments: number;
   packages: number;
   amount: number;
+  stations: string[];
 };
 
 export type PendingByTrain = {

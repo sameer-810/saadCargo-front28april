@@ -205,8 +205,18 @@ function PendingByTrainCard({ trains }: { trains: PendingByTrain[] }) {
                   title={`View ${p.name}'s consignments`}
                   className="-mx-2 flex w-full items-center justify-between gap-3 rounded-lg px-2 py-2 text-left text-sm transition-colors hover:bg-accent"
                 >
-                  <span className="font-medium text-foreground">{p.name}</span>
-                  <span className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span className="truncate font-medium text-foreground">{p.name}</span>
+                    {p.stations.map((s) => (
+                      <span
+                        key={s}
+                        className="shrink-0 rounded-md bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-primary"
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </span>
+                  <span className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
                     <span>
                       {p.consignments} cnmt · {p.packages} pkg
                     </span>
