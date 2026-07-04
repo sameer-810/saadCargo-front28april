@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ResourceListPage } from "@/modules/common/ResourceListPage";
 import { ConsignmentDialog } from "../components/ConsignmentDialog";
 import { useConsignments, useDeleteConsignment } from "../hooks/useConsignments";
@@ -15,8 +16,9 @@ import { partyName } from "@/shared/lib/partyDisplay";
 import type { Consignment, ConsignmentListQuery } from "../types";
 
 export function ConsignmentListPage() {
+  const [searchParams] = useSearchParams();
   const [filters, setFilters] = useState({
-    party: "",
+    party: searchParams.get("party") ?? "",
     paymentMode: "",
     paymentStatus: "",
     startDate: "",

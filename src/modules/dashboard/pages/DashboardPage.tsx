@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Package,
   IndianRupee,
@@ -8,6 +9,7 @@ import {
   RefreshCw,
   Train,
   Users,
+  ChevronRight,
 } from "lucide-react";
 import {
   Bar,
@@ -133,6 +135,7 @@ function MoneyTooltip({
  * Only one train is open at a time.
  */
 function PendingByTrainCard({ trains }: { trains: PendingByTrain[] }) {
+  const navigate = useNavigate();
   const [selected, setSelected] = useState<string | null>(null);
   const active = selected ? (trains.find((t) => t.trainNumber === selected) ?? null) : null;
 
@@ -195,14 +198,24 @@ function PendingByTrainCard({ trains }: { trains: PendingByTrain[] }) {
           </div>
           <ul className="divide-y divide-border">
             {active.parties.map((p) => (
-              <li key={p.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                <span className="font-medium text-foreground">{p.name}</span>
-                <span className="flex items-center gap-3 text-xs text-muted-foreground">
-                  <span>
-                    {p.consignments} cnmt · {p.packages} pkg
+              <li key={p.id}>
+                <button
+                  type="button"
+                  onClick={() => navigate(`/consignments?party=${p.id}`)}
+                  title={`View ${p.name}'s consignments`}
+                  className="-mx-2 flex w-full items-center justify-between gap-3 rounded-lg px-2 py-2 text-left text-sm transition-colors hover:bg-accent"
+                >
+                  <span className="font-medium text-foreground">{p.name}</span>
+                  <span className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span>
+                      {p.consignments} cnmt · {p.packages} pkg
+                    </span>
+                    <span className="font-semibold text-foreground">
+                      {formatCurrency(p.amount)}
+                    </span>
+                    <ChevronRight className="h-4 w-4 shrink-0" />
                   </span>
-                  <span className="font-semibold text-foreground">{formatCurrency(p.amount)}</span>
-                </span>
+                </button>
               </li>
             ))}
           </ul>
