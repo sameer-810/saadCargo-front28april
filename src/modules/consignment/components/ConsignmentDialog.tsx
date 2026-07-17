@@ -75,6 +75,7 @@ export function ConsignmentDialog({ open, onOpenChange, mode, value, onSuccess, 
       hamaliCharges: 0,
       otherCharges: 0,
       paymentMode: "paid_source",
+      directPaid: 0,
     },
   });
 
@@ -100,6 +101,7 @@ export function ConsignmentDialog({ open, onOpenChange, mode, value, onSuccess, 
           hamaliCharges: value.hamaliCharges,
           otherCharges: value.otherCharges,
           paymentMode: value.paymentMode,
+          directPaid: value.directPaid ?? 0,
           notes: value.notes ?? "",
         });
       } else {
@@ -116,12 +118,36 @@ export function ConsignmentDialog({ open, onOpenChange, mode, value, onSuccess, 
           hamaliCharges: 0,
           otherCharges: 0,
           paymentMode: "paid_source",
+          directPaid: 0,
         });
       }
     }
   }, [open, mode, value, form]);
 
   const { errors } = form.formState;
+
+  // Live payment status, derived from the charges + amount paid the owner types.
+  const [wFreight, wReimb, wHamali, wOther, wPaid] = form.watch([
+    "freightAmount",
+    "reimbursementAmount",
+    "hamaliCharges",
+    "otherCharges",
+    "directPaid",
+  ]);
+  const total =
+    (Number(wFreight) || 0) +
+    (Number(wReimb) || 0) +
+    (Number(wHamali) || 0) +
+    (Number(wOther) || 0);
+  const paid = Number(wPaid) || 0;
+  const balance = Math.round((total - paid) * 100) / 100;
+  const payState = paid <= 0 ? "Unpaid" : paid < total ? "Balance" : "Paid";
+  const payStateCls =
+    payState === "Paid"
+      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+      : payState === "Balance"
+        ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+        : "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400";
 
   async function onSubmit(data: ConsignmentFormValues) {
     try {
@@ -279,6 +305,74 @@ export function ConsignmentDialog({ open, onOpenChange, mode, value, onSuccess, 
               />
             </Field>
           </div>
+        </div>
+
+        <div className="border-t border-border pt-3 sm:col-span-2 md:col-span-3">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Payment
+            </p>
+            <span
+              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${payStateCls}`}
+            >
+              {payState}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Field label="Amount Paid (₹)" error={errors.directPaid?.message}>
+              <div className="flex gap-1.5">
+                <input
+                  type="number"
+                  step="0.01"
+                  min={0}
+                  className={inputCls}
+                  {...form.register("directPaid")}
+                />
+                <button
+                  type="button"
+                  onClick={() => form.setValue("directPaid", 0, { shouldValidate: true })}
+                  className="shrink-0 rounded-lg border border-border px-2.5 text-xs font-medium hover:bg-accent transition-colors"
+                  title="Mark unpaid"
+                >
+                  Unpaid
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    form.setValue("directPaid", Math.round(total * 100) / 100, {
+                      shouldValidate: true,
+                    })
+                  }
+                  className="shrink-0 rounded-lg border border-border px-2.5 text-xs font-medium hover:bg-accent transition-colors"
+                  title="Mark fully paid"
+                >
+                  Full
+                </button>
+              </div>
+            </Field>
+            <Field label="Total (₹)">
+              <input
+                className={`${inputCls} bg-muted/40`}
+                value={total.toFixed(2)}
+                readOnly
+                tabIndex={-1}
+              />
+            </Field>
+            <Field label="Balance Due (₹)">
+              <input
+                className={`${inputCls} bg-muted/40 font-semibold ${
+                  balance > 0 ? "text-red-600 dark:text-red-400" : ""
+                }`}
+                value={balance.toFixed(2)}
+                readOnly
+                tabIndex={-1}
+              />
+            </Field>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Amount collected directly for this parcel. Any lump-sum entries in the Payments module
+            are added on top of this.
+          </p>
         </div>
 
         <div className="sm:col-span-2 md:col-span-3">

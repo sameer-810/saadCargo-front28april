@@ -30,6 +30,7 @@ export const consignmentSchema = z.object({
   hamaliCharges: z.coerce.number().min(0),
   otherCharges: z.coerce.number().min(0),
   paymentMode: z.enum(["paid_source", "to_pay", "on_bill", "slip"]),
+  directPaid: z.coerce.number().min(0),
   notes: z.string().trim().optional(),
 });
 

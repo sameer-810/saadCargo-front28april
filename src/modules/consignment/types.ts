@@ -35,6 +35,7 @@ export type Consignment = {
   otherCharges: number;
   totalAmount: number;
   amountPaid: number;
+  directPaid: number;
   balanceDue: number;
   paymentMode: "paid_source" | "to_pay" | "on_bill" | "slip";
   paymentStatus: "pending" | "partial" | "received" | "settled";
@@ -89,5 +90,6 @@ export type ConsignmentCreatePayload = {
   hamaliCharges?: number;
   otherCharges?: number;
   paymentMode: string;
+  directPaid?: number;
   notes?: string;
 };
