@@ -22,12 +22,12 @@ type BusinessProfile = {
   defaultSgstRate?: number;
   billNumberPrefix?: string;
   useFinancialYearPrefix?: boolean;
-  // Read-only counters surfaced for the user but never PATCHed
+  // Numbering counters — editable from Settings behind an "advanced" toggle.
   nextBillNumber?: number;
   nextPodNumber?: number;
 };
 
-type ProfilePatch = Partial<Omit<BusinessProfile, "nextBillNumber" | "nextPodNumber">>;
+type ProfilePatch = Partial<BusinessProfile>;
 
 async function getProfile(): Promise<BusinessProfile> {
   const res = await http.get<{ data: BusinessProfile }>("/business-profile");
@@ -55,6 +55,21 @@ export function SettingsPage() {
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ["business-profile"], queryFn: getProfile });
   const [form, setForm] = useState<ProfilePatch>({});
+  // Numbering counters are locked by default; the toggle unlocks manual editing.
+  const [editCounters, setEditCounters] = useState(false);
+
+  function toggleEditCounters(on: boolean) {
+    setEditCounters(on);
+    // Locking again drops any unsaved counter edits so they can't be sent.
+    if (!on) {
+      setForm((f) => {
+        const next = { ...f };
+        delete next.nextBillNumber;
+        delete next.nextPodNumber;
+        return next;
+      });
+    }
+  }
 
   const mutation = useMutation({
     mutationFn: saveProfile,
@@ -318,18 +333,42 @@ export function SettingsPage() {
                 <span className="text-muted-foreground">Format bill numbers like 25-26/001</span>
               </label>
             </Field>
-            <Field label="Next Bill Number (read-only)">
+            <div className="sm:col-span-2">
+              <label className="inline-flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={editCounters}
+                  onChange={(e) => toggleEditCounters(e.target.checked)}
+                  className="h-4 w-4 cursor-pointer"
+                />
+                <span className="text-muted-foreground">Edit numbering counters (advanced)</span>
+              </label>
+              {editCounters && (
+                <p className="mt-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-300">
+                  ⚠ These set the <b>next</b> bill / POD number to be issued. Setting a value at or
+                  below one already used will create duplicate numbers — POD numbers must be unique
+                  and will fail. Only change this to correct or align your numbering.
+                </p>
+              )}
+            </div>
+            <Field label={editCounters ? "Next Bill Number" : "Next Bill Number (read-only)"}>
               <input
-                className={`${inputCls} bg-muted`}
+                type="number"
+                min={1}
+                className={`${inputCls} ${editCounters ? "" : "bg-muted"}`}
                 value={merged.nextBillNumber ?? ""}
-                disabled
+                onChange={setNumber("nextBillNumber")}
+                disabled={!editCounters}
               />
             </Field>
-            <Field label="Next POD Number (read-only)">
+            <Field label={editCounters ? "Next POD Number" : "Next POD Number (read-only)"}>
               <input
-                className={`${inputCls} bg-muted`}
+                type="number"
+                min={1}
+                className={`${inputCls} ${editCounters ? "" : "bg-muted"}`}
                 value={merged.nextPodNumber ?? ""}
-                disabled
+                onChange={setNumber("nextPodNumber")}
+                disabled={!editCounters}
               />
             </Field>
           </div>
