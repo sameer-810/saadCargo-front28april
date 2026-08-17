@@ -20,7 +20,11 @@ export const consignmentSchema = z.object({
     .trim()
     .min(1, "Destination required")
     .transform((v) => v.toUpperCase()),
-  type: z.enum(["railway_booking", "own_bogie", "agent_handover", "agent_received"]),
+  type: z.enum(["railway_booking", "own_bogie", "agent_handover", "agent_received", "delivery"]),
+  deliveryStatus: z.enum(["received", "loaded", "in_transit", "unloaded", "delivered", "returned"]),
+  paymentReceiver: z.string().trim().optional(),
+  isLease: z.boolean(),
+  isBooking: z.boolean(),
   agentName: z.string().trim().optional(),
   trainNumber: z.string().trim().min(1, "Train number is required"),
   bogieNumber: z.string().trim().optional(),

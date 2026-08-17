@@ -2,13 +2,24 @@ import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ResourceListPage } from "@/modules/common/ResourceListPage";
 import { ConsignmentDialog } from "../components/ConsignmentDialog";
-import { useConsignments, useDeleteConsignment } from "../hooks/useConsignments";
+import {
+  useConsignments,
+  useDeleteConsignment,
+  useUpdateConsignmentStatus,
+} from "../hooks/useConsignments";
 import { useParties } from "@/modules/party/hooks/useParties";
+import { toast } from "@/shared/lib/toast";
+import { getApiErrorMessage } from "@/shared/api/http";
 import {
   PAYMENT_MODES,
   PAYMENT_STATUSES,
   PAYMENT_MODE_COLORS,
   PAYMENT_STATUS_COLORS,
+  CONSIGNMENT_TYPES,
+  DELIVERY_STATUSES,
+  DELIVERY_STATUS_COLORS,
+  PAYMENT_RECEIVERS,
+  BOOKING_CLASSES,
 } from "../constants/consignment.constants";
 import { CONSIGNMENT_MASTER_QUERIES } from "../constants/consignment.queries";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -21,12 +32,26 @@ export function ConsignmentListPage() {
     party: searchParams.get("party") ?? "",
     paymentMode: "",
     paymentStatus: "",
+    type: "",
+    deliveryStatus: "",
+    paymentReceiver: "",
+    bookingClass: "",
     startDate: "",
     endDate: "",
   });
 
   const partiesRes = useParties(CONSIGNMENT_MASTER_QUERIES.parties);
   const parties = partiesRes.data?.items ?? [];
+
+  const statusMutation = useUpdateConsignmentStatus();
+  async function changeStatus(id: string, deliveryStatus: string) {
+    try {
+      await statusMutation.mutateAsync({ id, deliveryStatus });
+      toast.success("Order status updated");
+    } catch (err) {
+      toast.error(getApiErrorMessage(err));
+    }
+  }
 
   const inputCls =
     "rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring transition w-full";
@@ -47,6 +72,10 @@ export function ConsignmentListPage() {
         party: filters.party || undefined,
         paymentMode: filters.paymentMode || undefined,
         paymentStatus: filters.paymentStatus || undefined,
+        type: filters.type || undefined,
+        deliveryStatus: filters.deliveryStatus || undefined,
+        paymentReceiver: filters.paymentReceiver || undefined,
+        bookingClass: filters.bookingClass || undefined,
         startDate: filters.startDate || undefined,
         endDate: filters.endDate || undefined,
         page,
@@ -94,6 +123,72 @@ export function ConsignmentListPage() {
                 {PAYMENT_MODES.map((m) => (
                   <option key={m.value} value={m.value}>
                     {m.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Type</label>
+              <select
+                value={filters.type}
+                onChange={(e) => setFilters((f) => ({ ...f, type: e.target.value }))}
+                className={selectCls}
+              >
+                <option value="">All types</option>
+                {CONSIGNMENT_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                Order Status
+              </label>
+              <select
+                value={filters.deliveryStatus}
+                onChange={(e) => setFilters((f) => ({ ...f, deliveryStatus: e.target.value }))}
+                className={selectCls}
+              >
+                <option value="">All statuses</option>
+                {DELIVERY_STATUSES.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                Payment Receiver
+              </label>
+              <select
+                value={filters.paymentReceiver}
+                onChange={(e) => setFilters((f) => ({ ...f, paymentReceiver: e.target.value }))}
+                className={selectCls}
+              >
+                <option value="">All receivers</option>
+                {PAYMENT_RECEIVERS.map((r) => (
+                  <option key={r.value} value={r.value}>
+                    {r.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                Lease / Booking
+              </label>
+              <select
+                value={filters.bookingClass}
+                onChange={(e) => setFilters((f) => ({ ...f, bookingClass: e.target.value }))}
+                className={selectCls}
+              >
+                <option value="">All</option>
+                {BOOKING_CLASSES.map((b) => (
+                  <option key={b.value} value={b.value}>
+                    {b.label}
                   </option>
                 ))}
               </select>
@@ -164,6 +259,56 @@ export function ConsignmentListPage() {
             >
               {c.paymentStatus}
             </span>
+          ),
+        },
+        {
+          header: "Type",
+          getValue: (c) => (
+            <span className="text-xs">
+              {CONSIGNMENT_TYPES.find((t) => t.value === c.type)?.label ?? c.type}
+            </span>
+          ),
+        },
+        {
+          header: "Order Status",
+          getValue: (c) => (
+            <select
+              value={c.deliveryStatus}
+              onChange={(e) => changeStatus(c.id, e.target.value)}
+              disabled={statusMutation.isPending}
+              onClick={(e) => e.stopPropagation()}
+              className={`cursor-pointer rounded-full border-0 px-2 py-1 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 ${
+                DELIVERY_STATUS_COLORS[c.deliveryStatus] ?? ""
+              }`}
+            >
+              {DELIVERY_STATUSES.map((s) => (
+                <option key={s.value} value={s.value}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          ),
+        },
+        {
+          header: "Receiver",
+          getValue: (c) => c.paymentReceiver ?? "—",
+        },
+        {
+          header: "Class",
+          getValue: (c) => (
+            <div className="flex gap-1">
+              {c.isLease && (
+                <span className="rounded-full bg-teal-100 px-2 py-0.5 text-xs font-medium text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">
+                  Lease
+                </span>
+              )}
+              {c.isBooking && (
+                <span className="rounded-full bg-fuchsia-100 px-2 py-0.5 text-xs font-medium text-fuchsia-700 dark:bg-fuchsia-900/30 dark:text-fuchsia-400">
+                  Booking
+                </span>
+              )}
+              {!c.isLease && !c.isBooking && <span className="text-muted-foreground">—</span>}
+            </div>
           ),
         },
         {

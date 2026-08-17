@@ -24,7 +24,11 @@ export type Consignment = {
   contents?: string;
   originStation: string;
   destinationStation: string;
-  type: "railway_booking" | "own_bogie" | "agent_handover" | "agent_received";
+  type: "railway_booking" | "own_bogie" | "agent_handover" | "agent_received" | "delivery";
+  deliveryStatus: "received" | "loaded" | "in_transit" | "unloaded" | "delivered" | "returned";
+  paymentReceiver?: string | null;
+  isLease: boolean;
+  isBooking: boolean;
   agentName?: string;
   trainNumber?: string;
   bogieNumber?: string;
@@ -50,6 +54,10 @@ export type ConsignmentListQuery = {
   party?: string;
   paymentMode?: string;
   paymentStatus?: string;
+  type?: string;
+  deliveryStatus?: string;
+  paymentReceiver?: string;
+  bookingClass?: string;
   destinationStation?: string;
   startDate?: string;
   endDate?: string;
@@ -91,5 +99,9 @@ export type ConsignmentCreatePayload = {
   otherCharges?: number;
   paymentMode: string;
   directPaid?: number;
+  deliveryStatus?: string;
+  paymentReceiver?: string;
+  isLease?: boolean;
+  isBooking?: boolean;
   notes?: string;
 };

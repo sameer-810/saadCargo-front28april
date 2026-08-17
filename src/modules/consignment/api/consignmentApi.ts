@@ -12,6 +12,14 @@ export const updateConsignment = (id: string, payload: Partial<ConsignmentCreate
   api.update(id, payload);
 export const deleteConsignment = (id: string) => api.remove(id);
 
+/** Lightweight delivery-status update from the Consignments list dropdown. */
+export async function updateConsignmentStatus(id: string, deliveryStatus: string) {
+  const res = await http.patch<{ data: Consignment }>(`/consignments/${id}/status`, {
+    deliveryStatus,
+  });
+  return res.data.data;
+}
+
 export async function getDailySummary(date: string) {
   const res = await http.get<{ data: unknown }>(`/consignments/daily-summary/${date}`);
   return res.data.data;

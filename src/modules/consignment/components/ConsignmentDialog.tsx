@@ -7,7 +7,12 @@ import {
   type ConsignmentFormValues,
 } from "../validations/consignment.validation";
 import { useCreateConsignment, useUpdateConsignment } from "../hooks/useConsignments";
-import { CONSIGNMENT_TYPES, PAYMENT_MODES } from "../constants/consignment.constants";
+import {
+  CONSIGNMENT_TYPES,
+  PAYMENT_MODES,
+  DELIVERY_STATUSES,
+  PAYMENT_RECEIVERS,
+} from "../constants/consignment.constants";
 import { getApiErrorMessage } from "@/shared/api/http";
 import { toast } from "@/shared/lib/toast";
 import { partyId as toPartyId } from "@/shared/lib/partyDisplay";
@@ -70,6 +75,10 @@ export function ConsignmentDialog({ open, onOpenChange, mode, value, onSuccess, 
       originStation: "MUM",
       destinationStation: "",
       type: "railway_booking",
+      deliveryStatus: "received",
+      paymentReceiver: "",
+      isLease: false,
+      isBooking: false,
       freightAmount: 0,
       reimbursementAmount: 0,
       hamaliCharges: 0,
@@ -92,6 +101,10 @@ export function ConsignmentDialog({ open, onOpenChange, mode, value, onSuccess, 
           originStation: value.originStation,
           destinationStation: value.destinationStation,
           type: value.type,
+          deliveryStatus: value.deliveryStatus,
+          paymentReceiver: value.paymentReceiver ?? "",
+          isLease: value.isLease,
+          isBooking: value.isBooking,
           agentName: value.agentName ?? "",
           trainNumber: value.trainNumber ?? "",
           bogieNumber: value.bogieNumber ?? "",
@@ -113,6 +126,10 @@ export function ConsignmentDialog({ open, onOpenChange, mode, value, onSuccess, 
           originStation: "MUM",
           destinationStation: "",
           type: "railway_booking",
+          deliveryStatus: "received",
+          paymentReceiver: "",
+          isLease: false,
+          isBooking: false,
           freightAmount: 0,
           reimbursementAmount: 0,
           hamaliCharges: 0,
@@ -150,11 +167,13 @@ export function ConsignmentDialog({ open, onOpenChange, mode, value, onSuccess, 
         : "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400";
 
   async function onSubmit(data: ConsignmentFormValues) {
+    // Empty "— None —" selection must be omitted, not sent as "" (backend enum).
+    const payload = { ...data, paymentReceiver: data.paymentReceiver || undefined };
     try {
       if (mode === "create") {
-        await createMutation.mutateAsync(data);
+        await createMutation.mutateAsync(payload);
       } else if (value) {
-        await updateMutation.mutateAsync({ id: value.id, payload: data });
+        await updateMutation.mutateAsync({ id: value.id, payload });
       }
       toast.success(mode === "create" ? "Consignment created" : "Consignment updated");
       onOpenChange(false);
@@ -189,6 +208,24 @@ export function ConsignmentDialog({ open, onOpenChange, mode, value, onSuccess, 
               ))}
             </select>
           </Field>
+          <div className="mt-2 flex items-center gap-4">
+            <label className="inline-flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="h-4 w-4 cursor-pointer"
+                {...form.register("isLease")}
+              />
+              <span className="text-muted-foreground">Lease</span>
+            </label>
+            <label className="inline-flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="h-4 w-4 cursor-pointer"
+                {...form.register("isBooking")}
+              />
+              <span className="text-muted-foreground">Booking</span>
+            </label>
+          </div>
         </div>
 
         <Field label="Packages" required error={errors.packages?.message}>
@@ -232,6 +269,15 @@ export function ConsignmentDialog({ open, onOpenChange, mode, value, onSuccess, 
             {CONSIGNMENT_TYPES.map((t) => (
               <option key={t.value} value={t.value}>
                 {t.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Order Status" error={errors.deliveryStatus?.message}>
+          <select className={selectCls} {...form.register("deliveryStatus")}>
+            {DELIVERY_STATUSES.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
               </option>
             ))}
           </select>
@@ -317,6 +363,18 @@ export function ConsignmentDialog({ open, onOpenChange, mode, value, onSuccess, 
             >
               {payState}
             </span>
+          </div>
+          <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Field label="Payment Receiver" error={errors.paymentReceiver?.message}>
+              <select className={selectCls} {...form.register("paymentReceiver")}>
+                <option value="">— None —</option>
+                {PAYMENT_RECEIVERS.map((r) => (
+                  <option key={r.value} value={r.value}>
+                    {r.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Field label="Amount Paid (₹)" error={errors.directPaid?.message}>
